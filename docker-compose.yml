@@ -1,0 +1,23 @@
+version: '2.0'
+services:
+  mymoneymanager_nginx:
+    build: docker/nginx
+    image: mymoneymanager_nginx:latest
+    ports:
+      - "80:80"
+    links:
+      - "mymoneymanager_php:mymoneymanager_php"
+    volumes_from:
+      - "mymoneymanager_php"
+
+  mymoneymanager_php:
+    build: docker/php
+    expose:
+      - "9000"
+    ports:
+      - "9000:9000"
+    image: mymoneymanager_php:latest
+    working_dir: /app
+    volumes:
+      - .:/app
+
