@@ -1,6 +1,7 @@
 FROM php:7.0-fpm
 
-RUN useradd -ms /bin/bash vagrant
+RUN /usr/local/bin/docker-php-ext-install pdo pdo_mysql
+RUN /usr/local/bin/docker-php-ext-install bcmath
 
 COPY . /app
 
