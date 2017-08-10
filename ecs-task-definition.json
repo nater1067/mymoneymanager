@@ -1,0 +1,107 @@
+{
+  "requiresAttributes": [
+    {
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.17",
+      "targetId": null,
+      "targetType": null
+    },
+    {
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.ecr-auth",
+      "targetId": null,
+      "targetType": null
+    },
+    {
+      "value": null,
+      "name": "com.amazonaws.ecs.capability.docker-remote-api.1.21",
+      "targetId": null,
+      "targetType": null
+    }
+  ],
+  "taskDefinitionArn": "arn:aws:ecs:us-west-2:964400098929:task-definition/mymoneymanager_webserver:9",
+  "networkMode": "bridge",
+  "status": "ACTIVE",
+  "revision": 9,
+  "taskRoleArn": null,
+  "containerDefinitions": [
+    {
+      "volumesFrom": [
+        {
+          "readOnly": null,
+          "sourceContainer": "mymoneymanager_php"
+        }
+      ],
+      "memory": null,
+      "extraHosts": null,
+      "dnsServers": null,
+      "disableNetworking": null,
+      "dnsSearchDomains": null,
+      "portMappings": [
+        {
+          "hostPort": 80,
+          "containerPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "hostname": null,
+      "essential": false,
+      "entryPoint": null,
+      "mountPoints": [],
+      "name": "mymoneymanager_nginx",
+      "ulimits": null,
+      "dockerSecurityOptions": null,
+      "environment": [],
+      "links": [
+        "mymoneymanager_php:mymoneymanager_php"
+      ],
+      "workingDirectory": null,
+      "readonlyRootFilesystem": null,
+      "image": "964400098929.dkr.ecr.us-west-2.amazonaws.com/mymoneymanager_nginx:latest",
+      "command": null,
+      "user": null,
+      "dockerLabels": null,
+      "logConfiguration": null,
+      "cpu": 512,
+      "privileged": null,
+      "memoryReservation": 300
+    },
+    {
+      "volumesFrom": [],
+      "memory": null,
+      "extraHosts": null,
+      "dnsServers": null,
+      "disableNetworking": null,
+      "dnsSearchDomains": null,
+      "portMappings": [
+        {
+          "hostPort": 9000,
+          "containerPort": 9000,
+          "protocol": "tcp"
+        }
+      ],
+      "hostname": null,
+      "essential": true,
+      "entryPoint": null,
+      "mountPoints": [],
+      "name": "mymoneymanager_php",
+      "ulimits": null,
+      "dockerSecurityOptions": null,
+      "environment": [],
+      "links": [],
+      "workingDirectory": "/app",
+      "readonlyRootFilesystem": null,
+      "image": "964400098929.dkr.ecr.us-west-2.amazonaws.com/mymoneymanager_php:latest",
+      "command": null,
+      "user": null,
+      "dockerLabels": null,
+      "logConfiguration": null,
+      "cpu": 512,
+      "privileged": null,
+      "memoryReservation": 300
+    }
+  ],
+  "placementConstraints": [],
+  "volumes": [],
+  "family": "mymoneymanager_webserver"
+}
