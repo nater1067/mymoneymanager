@@ -4,7 +4,7 @@ RUN /usr/local/bin/docker-php-ext-install pdo pdo_mysql
 RUN /usr/local/bin/docker-php-ext-install bcmath
 
 COPY . /app
-COPY ./parameters-production.yml /app/config/parameters.yml
+COPY ./parameters-production.yml /app/app/config/parameters.yml
 
 RUN chown www-data -R /app/var
 
