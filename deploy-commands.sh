@@ -1,3 +1,6 @@
+# To deploy, first push up new docker containers using ./build.sh
+# Then, delete all the running of the service
+
 # Lists tasks running in a given cluster
 # Will return a result like:
 # "{
