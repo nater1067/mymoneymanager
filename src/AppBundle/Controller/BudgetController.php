@@ -22,10 +22,10 @@ class BudgetController extends Controller
      *
      * @return JsonResponse
      */
-    public function addIncomeStream(Request $request, $budgetId) {
+    public function addIncomeStream(Request $request, $budgetId)
+    {
         $content = $request->getContent();
-        if (!empty($content))
-        {
+        if (!empty($content)) {
             $em = $this->getDoctrine()->getManager();
 
             $budgets = $em->getRepository("\AppBundle\Entity\Budget");
@@ -68,10 +68,10 @@ class BudgetController extends Controller
      *
      * @return JsonResponse
      */
-    public function addExpense(Request $request, $budgetId) {
+    public function addExpense(Request $request, $budgetId)
+    {
         $content = $request->getContent();
-        if (!empty($content))
-        {
+        if (!empty($content)) {
             $em = $this->getDoctrine()->getManager();
 
             $budgets = $em->getRepository("\AppBundle\Entity\Budget");
@@ -149,10 +149,33 @@ class BudgetController extends Controller
     }
 
     /**
-     * @Route("/budget/{budgetId}/", name="get_budgets")
+     * @Route("/budgets", name="get_budget_ids")
      * @Method({"GET"})
      */
-    public function getBudgetsAction($budgetId)
+    public function getBudgetIdsAction()
+    {
+        $em = $this->getDoctrine()->getManager();
+
+        $budgets = $em->getRepository("\AppBundle\Entity\Budget");
+
+        // TODO - make sure this only uses one MariaDB query!!
+        $allBudgets = $budgets->findAll();
+
+        $allBudgetIds = array_map(function(Budget $budget) {
+            return $budget->getId();
+        }, $allBudgets);
+
+        return new JsonResponse([
+            "status" => "success",
+            "budget_ids" => $allBudgetIds,
+        ]);
+    }
+
+    /**
+     * @Route("/budget/{budgetId}/", name="get_budget")
+     * @Method({"GET"})
+     */
+    public function getBudgetAction($budgetId)
     {
         $em = $this->getDoctrine()->getManager();
 
