@@ -48,6 +48,10 @@ class Budget
         $this->expenses->add($expense);
     }
 
+    public function addIncomeStream(IncomeStream $incomeStream) {
+        $this->incomeStreams->add($incomeStream);
+    }
+
     /**
      * @return IncomeStream[]
      */

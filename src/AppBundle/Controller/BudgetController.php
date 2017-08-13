@@ -14,6 +14,52 @@ use Symfony\Component\HttpFoundation\Request;
 class BudgetController extends Controller
 {
     /**
+     * @Route("/budget/{budgetId}/incomeStream/", name="budget_income_stream_add")
+     * @Method({"POST"})
+     *
+     * @param Request $request
+     * @param $budgetId
+     *
+     * @return JsonResponse
+     */
+    public function addIncomeStream(Request $request, $budgetId) {
+        $content = $request->getContent();
+        if (!empty($content))
+        {
+            $em = $this->getDoctrine()->getManager();
+
+            $budgets = $em->getRepository("\AppBundle\Entity\Budget");
+
+            /** @var Budget $budget */
+            $budget = $budgets->find($budgetId);
+
+            $amount = $request->request->get('amount', '0');
+            $name = $request->request->get('name', '');
+            $frequency = $request->request->get('frequency', '');
+
+            /**
+             * Example request body:
+             * {name: "groceries", amount: 10000, frequency: 2}
+             */
+            $budget->addIncomeStream(new IncomeStream($amount, $name, $frequency, $budget));
+
+            $em->flush();
+
+            return new JsonResponse([
+                "status" => "success",
+                "budget" => [
+                    "id" => $budget->getId(),
+                ],
+            ]);
+        }
+
+        return new JsonResponse([
+            "status" => "error",
+            "message" => "No request body",
+        ]);
+    }
+
+    /**
      * @Route("/budget/{budgetId}/expense/", name="budget_expense_add")
      * @Method({"POST"})
      *
@@ -35,7 +81,6 @@ class BudgetController extends Controller
 
             $amount = $request->request->get('amount', '0');
             $name = $request->request->get('name', '');
-
 
             /**
              * Example request body:
