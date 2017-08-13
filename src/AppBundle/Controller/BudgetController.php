@@ -5,15 +5,42 @@ namespace AppBundle\Controller;
 use AppBundle\Entity\Budget;
 use AppBundle\Entity\Expense;
 use AppBundle\Entity\IncomeStream;
+use Exception;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\Form\Extension\Core\Type\CurrencyType;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * We store currency as the base unit (right now, we only have US cents (pennies))
+ * Convert this to localized format for the api consumer
+ */
+function convertCurrencyForPresentation($baseAmount, $currency) {
+    if ($currency == BudgetController::CURRENCY_USD) {
+        return $baseAmount / 100;
+    }
+
+    throw new Exception("Unsupported currency " . $currency);
+}
+
+/**
+ * Converts from presentation currency (right now, we only have US dollars) to base currency (pennies)
+ */
+function convertPresentationCurrencyToBaseCurrency($presentationAmount, $currency) {
+    if ($currency == BudgetController::CURRENCY_USD) {
+        return $presentationAmount * 100;
+    }
+
+    throw new Exception("Unsupported currency " . $currency);
+}
+
 class BudgetController extends Controller
 {
+    const CURRENCY_USD = 'USD';
+
     /**
      * @Route("/incomeStream/{incomeStreamId}", name="budget_income_stream_delete")
      * @Method({"DELETE"})
@@ -74,7 +101,7 @@ class BudgetController extends Controller
             /** @var Budget $budget */
             $budget = $budgets->find($budgetId);
 
-            $amount = $request->request->get('amount', '0');
+            $amount = convertPresentationCurrencyToBaseCurrency($request->request->get('amount', '0'), self::CURRENCY_USD);
             $name = $request->request->get('name', '');
             $frequency = $request->request->get('frequency', '');
 
@@ -120,7 +147,7 @@ class BudgetController extends Controller
             /** @var Budget $budget */
             $budget = $budgets->find($budgetId);
 
-            $amount = $request->request->get('amount', '0');
+            $amount = convertPresentationCurrencyToBaseCurrency($request->request->get('amount', '0'), self::CURRENCY_USD);
             $name = $request->request->get('name', '');
 
             /**
@@ -151,41 +178,46 @@ class BudgetController extends Controller
      */
     public function saveBudgetAction(Request $request)
     {
-        $postBody = json_decode($request->getContent(), true);
+        $content = $request->getContent();
+        if (!empty($content)) {
+//            $postBody = json_decode($request->getContent(), true);
 
-        $budget = new Budget();
+            $budget = new Budget();
 
-        $incomeStreams = array_map(function ($incomeStream) use ($budget) {
-            return new IncomeStream(
-                $incomeStream["amount"],
-                $incomeStream["name"],
-                $incomeStream["frequency"],
-                $budget
-            );
-        }, $postBody['incomeStreams']);
+//            $incomeStreams = array_map(function ($incomeStream) use ($budget) {
+//                return new IncomeStream(
+//                    convertPresentationCurrencyToBaseCurrency($incomeStream["amount"], self::CURRENCY_USD),
+//                    $incomeStream["name"],
+//                    $incomeStream["frequency"],
+//                    $budget
+//                );
+//            }, isset($postBody["incomeStreams"]) ? $postBody['incomeStreams'] : []);
+//
+//            $expenses = array_map(function ($expense) use ($budget) {
+//                return new Expense(
+//                    convertPresentationCurrencyToBaseCurrency($expense["amount"], self::CURRENCY_USD),
+//                    $expense["name"],
+//                    $budget
+//                );
+//            }, isset($postBody["expense"]) ? $postBody['expense'] : []);
 
-        $expenses = array_map(function ($expense) use ($budget) {
-            return new Expense(
-                $expense["amount"],
-                $expense["name"],
-                $budget
-            );
-        }, $postBody['expenses']);
+            $name = $request->request->get('name', '');
+            $budget->setName($name);
 
-        $budget->setIncomeStreams($incomeStreams);
+//            $budget->setIncomeStreams($incomeStreams);
+//
+//            $budget->setExpenses($expenses);
 
-        $budget->setExpenses($expenses);
+            $em = $this->getDoctrine()->getManager();
+            $em->persist($budget);
+            $em->flush();
 
-
-        $em = $this->getDoctrine()->getManager();
-        $em->persist($budget);
-        $em->flush();
+            return new JsonResponse($this->serializeBudget($budget));
+        }
 
         return new JsonResponse([
-            "status" => "success",
-            "budget" => [
-                "id" => $budget->getId(),
-            ],
+            "status" => "error",
+            "message" => "No request body",
         ]);
     }
 
@@ -203,7 +235,10 @@ class BudgetController extends Controller
         $allBudgets = $budgets->findAll();
 
         $allBudgetIds = array_map(function(Budget $budget) {
-            return $budget->getId();
+            return [
+                "id" => $budget->getId(),
+                "name" => $budget->getName(),
+            ];
         }, $allBudgets);
 
         return new JsonResponse([
@@ -225,13 +260,18 @@ class BudgetController extends Controller
         /** @var Budget $budget */
         $budget = $budgets->find($budgetId);
 
+        return new JsonResponse($this->serializeBudget($budget));
+    }
+
+    private function serializeBudget(Budget $budget) {
+
         $incomeStreams = array_map(function (IncomeStream $incomeStream) {
             return [
                 "id" => $incomeStream->getId(),
                 "key" => $incomeStream->getId(),
                 "name" => $incomeStream->getName(),
                 "frequency" => $incomeStream->getFrequency(),
-                "amount" => $incomeStream->getAmount(),
+                "amount" => convertCurrencyForPresentation($incomeStream->getAmount(), self::CURRENCY_USD),
             ];
         }, $budget->getIncomeStreams());
 
@@ -240,59 +280,18 @@ class BudgetController extends Controller
                 "id" => $expense->getId(),
                 "key" => $expense->getId(),
                 "name" => $expense->getName(),
-                "amount" => $expense->getAmount(),
+                "amount" => convertCurrencyForPresentation($expense->getAmount(), self::CURRENCY_USD),
             ];
         }, $budget->getExpenses());
 
-
-        return new JsonResponse([
+        return [
+            "id" => $budget->getId(),
+            "name" => $budget->getName(),
             "incomeStreams" => $incomeStreams,
             "expenses" => $expenses,
-        ]);
-
-        return new JsonResponse([
-            "incomeStreams" => [
-                [
-                    "key" => 1,
-                    "name" => "Paycheck",
-                    "frequency" => 2,
-                    "amount" => 2000,
-                ],
-                [
-                    "key" => 2,
-                    "name" => "Investment Income",
-                    "frequency" => 1,
-                    "amount" => 200,
-                ],
-                [
-                    "key" => 3,
-                    "name" => "Consulting",
-                    "frequency" => 2,
-                    "amount" => 400,
-                ],
-            ],
-            "expenses" => [
-                [
-                    "key" => 1,
-                    "name" => "Mortgage",
-                    "amount" => -1300,
-                ],
-                [
-                    "key" => 2,
-                    "name" => "HOA",
-                    "amount" => -400,
-                ],
-                [
-                    "key" => 3,
-                    "name" => "Phone",
-                    "amount" => -120,
-                ],
-                [
-                    "key" => 4,
-                    "name" => "Internet",
-                    "amount" => -60,
-                ],
-            ]
-        ]);
+            "totalIncome" => convertCurrencyForPresentation($budget->totalIncomeStreams(), self::CURRENCY_USD),
+            "totalExpenses" => convertCurrencyForPresentation($budget->totalExpenses(), self::CURRENCY_USD),
+            "totalLeftOver" => convertCurrencyForPresentation($budget->getLeftOver(), self::CURRENCY_USD),
+        ];
     }
 }

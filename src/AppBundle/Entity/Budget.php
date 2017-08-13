@@ -18,6 +18,11 @@ class Budget
     private $id;
 
     /**
+     * @ORM\Column(type="string")
+     */
+    private $name;
+
+    /**
      * @ORM\OneToMany(targetEntity="IncomeStream", mappedBy="budget", cascade={"persist"})
      *
      * @var IncomeStream[]
@@ -72,5 +77,53 @@ class Budget
     public function getId()
     {
         return $this->id;
+    }
+
+    /**
+     * Return the combined amount of all income streams
+     *
+     * @return int - the total amount of income in cents
+     */
+    public function totalIncomeStreams()
+    {
+        return array_reduce($this->getIncomeStreams(), function ($totalCents = 0, IncomeStream $incomeStream) {
+            return $totalCents + ($incomeStream->getAmount() * $incomeStream->getFrequency());
+        });
+    }
+
+    /**
+     * Return the combined amount of all expenses
+     *
+     * @return int - the total amount of expenses in cents
+     */
+    public function totalExpenses()
+    {
+        return array_reduce($this->getExpenses(), function ($totalCents = 0, Expense $expense) {
+            return $totalCents + $expense->getAmount();
+        });
+    }
+
+    /**
+     * Return the combined amount of all income streams
+     */
+    public function getLeftOver()
+    {
+        return $this->totalIncomeStreams() - $this->totalExpenses();
+    }
+
+    /**
+     * @return string
+     */
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    /**
+     * @return void
+     */
+    public function setName($name)
+    {
+        $this->name = $name;
     }
 }
