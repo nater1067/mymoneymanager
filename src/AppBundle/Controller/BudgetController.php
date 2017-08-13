@@ -10,9 +10,50 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class BudgetController extends Controller
 {
+    /**
+     * @Route("/incomeStream/{incomeStreamId}", name="budget_income_stream_delete")
+     * @Method({"DELETE"})
+     *
+     * @param $incomeStreamId
+     *
+     * @return Response
+     */
+    public function deleteIncomeStream($incomeStreamId)
+    {
+        $em = $this->getDoctrine()->getManager();
+
+        $incomeStream = $em->getReference("\AppBundle\Entity\IncomeStream", $incomeStreamId);
+        $em->remove($incomeStream);
+
+        $em->flush();
+
+        return new Response('', Response::HTTP_OK);
+    }
+
+    /**
+     * @Route("/expense/{expenseId}", name="budget_expense_delete")
+     * @Method({"DELETE"})
+     *
+     * @param $expenseId
+     *
+     * @return Response
+     */
+    public function deleteExpense($expenseId)
+    {
+        $em = $this->getDoctrine()->getManager();
+
+        $expense = $em->getReference("\AppBundle\Entity\Expense", $expenseId);
+        $em->remove($expense);
+
+        $em->flush();
+
+        return new Response('', Response::HTTP_OK);
+    }
+
     /**
      * @Route("/budget/{budgetId}/incomeStream/", name="budget_income_stream_add")
      * @Method({"POST"})
@@ -186,6 +227,7 @@ class BudgetController extends Controller
 
         $incomeStreams = array_map(function (IncomeStream $incomeStream) {
             return [
+                "id" => $incomeStream->getId(),
                 "key" => $incomeStream->getId(),
                 "name" => $incomeStream->getName(),
                 "frequency" => $incomeStream->getFrequency(),
@@ -195,6 +237,7 @@ class BudgetController extends Controller
 
         $expenses = array_map(function (Expense $expense) {
             return [
+                "id" => $expense->getId(),
                 "key" => $expense->getId(),
                 "name" => $expense->getName(),
                 "amount" => $expense->getAmount(),
