@@ -42,6 +42,26 @@ class BudgetController extends Controller
     const CURRENCY_USD = 'USD';
 
     /**
+     * @Route("/budgets/{budgetId}", name="budget_delete")
+     * @Method({"DELETE"})
+     *
+     * @param $budgetId
+     *
+     * @return Response
+     */
+    public function deleteBudget($budgetId)
+    {
+        $em = $this->getDoctrine()->getManager();
+
+        $budget = $em->getReference("\AppBundle\Entity\Budget", $budgetId);
+        $em->remove($budget);
+
+        $em->flush();
+
+        return new Response('', Response::HTTP_OK);
+    }
+
+    /**
      * @Route("/incomeStream/{incomeStreamId}", name="budget_income_stream_delete")
      * @Method({"DELETE"})
      *
