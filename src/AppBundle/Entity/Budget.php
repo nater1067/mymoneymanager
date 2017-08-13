@@ -23,14 +23,14 @@ class Budget
     private $name;
 
     /**
-     * @ORM\OneToMany(targetEntity="IncomeStream", mappedBy="budget", cascade={"persist"})
+     * @ORM\OneToMany(targetEntity="IncomeStream", mappedBy="budget", cascade={"persist", "remove"})
      *
      * @var IncomeStream[]
      */
     private $incomeStreams = [];
 
     /**
-     * @ORM\OneToMany(targetEntity="Expense", mappedBy="budget", cascade={"persist"})
+     * @ORM\OneToMany(targetEntity="Expense", mappedBy="budget", cascade={"persist", "remove"})
      *
      * @var Expense[]
      */
