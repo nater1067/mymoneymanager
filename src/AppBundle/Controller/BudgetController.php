@@ -215,9 +215,10 @@ class BudgetController extends Controller
         $expenses = $em->getRepository("\AppBundle\Entity\Expense");
 
         // TODO - derive this from session data
-        $nateBudgetId = 31;
+        $firstBudgetId = $em->getRepository("\AppBundle\Entity\Budget")->findOneBy([
+        ])->getId();
 
-        $budget = $em->getReference("\AppBundle\Entity\Budget", $nateBudgetId);
+        $budget = $em->getReference("\AppBundle\Entity\Budget", $firstBudgetId);
 
         // TODO - find expenses that have a given tag using Doctrine
         /** @var Expense[] $expenses */
