@@ -79,8 +79,20 @@ class Expense
         return $this->name;
     }
 
+    /**
+     * @return Tag[]
+     */
     public function getTags() {
         return $this->tags->toArray();
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getTagNames() {
+        return array_map(function (Tag $tag) {
+            return $tag->getName();
+        }, $this->getTags());
     }
 
     public function addTag(Tag $toAdd) {

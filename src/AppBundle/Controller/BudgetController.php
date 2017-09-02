@@ -7,6 +7,7 @@ use AppBundle\Entity\Expense;
 use AppBundle\Entity\IncomeStream;
 use AppBundle\Entity\Tag;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityRepository;
 use Exception;
 use Psr\Log\LoggerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
@@ -196,6 +197,46 @@ class BudgetController extends Controller
     }
 
     /**
+     * @Route("/expenses", name="expenses_get")
+     * @Method({"GET"})
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getExpenses(Request $request) {
+        /** @var string|null $tags */
+        $tags = $request->query->get("tags"); // "savings,tax-related,..."
+
+        $tagsExploded = $tags !== null ? explode(",", $tags) : [];
+
+        $em = $this->getDoctrine()->getManager();
+
+        /** @var EntityRepository $expenses */
+        $expenses = $em->getRepository("\AppBundle\Entity\Expense");
+
+        // TODO - derive this from session data
+        $nateBudgetId = 31;
+
+        $budget = $em->getReference("\AppBundle\Entity\Budget", $nateBudgetId);
+
+        // TODO - find expenses that have a given tag using Doctrine
+        /** @var Expense[] $expenses */
+        $foundExpenses = $expenses->findBy([
+            "budget" => $budget,
+        ]);
+
+        $filteredExpenses = array_values(array_filter($foundExpenses, function (Expense $expense) use ($tagsExploded) {
+            return count($tagsExploded) === 0 || count(array_intersect($expense->getTagNames(), $tagsExploded)) > 0;
+        }));
+
+        return new JsonResponse([
+            "expenses" => array_map(function (Expense $expense) {
+                return $this->serializeExpense($expense);
+            }, $filteredExpenses)
+        ]);
+    }
+
+    /**
      * @Route("/expense/{expenseId}/tags/{tagName}", name="budget_expense_tag_add")
      * @Method({"POST"})
      *
@@ -319,6 +360,18 @@ class BudgetController extends Controller
         return new JsonResponse($this->serializeBudget($budget));
     }
 
+    private function serializeExpense(Expense $expense) {
+        return [
+            "id" => $expense->getId(),
+            "key" => $expense->getId(),
+            "name" => $expense->getName(),
+            "amount" => convertCurrencyForPresentation($expense->getAmount(), self::CURRENCY_USD),
+            "tags" => array_map(function (Tag $tag) {
+                return $tag->getName();
+            }, $expense->getTags())
+        ];
+    }
+
     private function serializeBudget(Budget $budget) {
 
         $incomeStreams = array_map(function (IncomeStream $incomeStream) {
@@ -332,15 +385,7 @@ class BudgetController extends Controller
         }, $budget->getIncomeStreams());
 
         $expenses = array_map(function (Expense $expense) {
-            return [
-                "id" => $expense->getId(),
-                "key" => $expense->getId(),
-                "name" => $expense->getName(),
-                "amount" => convertCurrencyForPresentation($expense->getAmount(), self::CURRENCY_USD),
-                "tags" => array_map(function (Tag $tag) {
-                    return $tag->getName();
-                }, $expense->getTags())
-            ];
+            return $this->serializeExpense($expense);
         }, $budget->getExpenses());
 
         return [
