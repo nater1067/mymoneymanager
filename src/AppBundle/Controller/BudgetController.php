@@ -5,7 +5,10 @@ namespace AppBundle\Controller;
 use AppBundle\Entity\Budget;
 use AppBundle\Entity\Expense;
 use AppBundle\Entity\IncomeStream;
+use AppBundle\Entity\Tag;
+use Doctrine\ORM\EntityManager;
 use Exception;
+use Psr\Log\LoggerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
@@ -193,6 +196,39 @@ class BudgetController extends Controller
     }
 
     /**
+     * @Route("/expense/{expenseId}/tags/{tagName}", name="budget_expense_tag_add")
+     * @Method({"POST"})
+     *
+     * @param Request $request
+     * @param $expenseId
+     * @param $tagName - The name of the tag to add
+     * @return JsonResponse
+     */
+    public function addTagToExpense(Request $request, LoggerInterface $logger, $expenseId, $tagName)
+    {
+        /** @var EntityManager $em */
+        $em = $this->getDoctrine()->getManager();
+
+        $expenses = $em->getRepository("\AppBundle\Entity\Expense");
+
+        /** @var Tag $tag */
+        $tag = $em->getRepository("\AppBundle\Entity\Tag")->find($tagName);
+
+        $logger->warning("Expense Id: " . $expenseId);
+
+        /** @var Expense $expense */
+        $expense = $em->getReference("\AppBundle\Entity\Expense", $expenseId);
+
+        $expense->addTag($tag);
+
+        $em->flush();
+
+        return new JsonResponse([
+            "status" => "success",
+        ]);
+    }
+
+    /**
      * @Route("/budget/", name="save_budget")
      * @Method({"POST"})
      */
@@ -301,6 +337,9 @@ class BudgetController extends Controller
                 "key" => $expense->getId(),
                 "name" => $expense->getName(),
                 "amount" => convertCurrencyForPresentation($expense->getAmount(), self::CURRENCY_USD),
+                "tags" => array_map(function (Tag $tag) {
+                    return $tag->getName();
+                }, $expense->getTags())
             ];
         }, $budget->getExpenses());
 
